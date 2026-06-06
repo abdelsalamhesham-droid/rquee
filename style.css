@@ -1,0 +1,68 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+body {
+    background-color: #0b0b0f;
+    overflow: hidden;
+    font-family: 'Arial Black', 'Cairo', sans-serif;
+}
+
+canvas {
+    display: block;
+}
+
+/* تنسيق رسالة الفوز */
+#winMessage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    color: #ff3344;
+    text-shadow: 0 0 30px rgba(255, 51, 68, 0.9);
+    letter-spacing: 5px;
+    transition: opacity 0.5s ease-in-out;
+    z-index: 10;
+    pointer-events: none;
+    text-align: center;
+    width: 100%;
+}
+
+/* تنسيق تنبيه البقرة فوق في منتصف الشاشة */
+#cowAlert {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.5);
+    font-size: 3.5rem;
+    color: #ff4444;
+    font-weight: bold;
+    text-shadow: 0 0 20px rgba(255, 68, 68, 0.8);
+    z-index: 10;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cow-hidden {
+    opacity: 0;
+    top: 5%; /* تأثير حركة خفيفة لبرة الشاشة */
+}
+
+.cow-show {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1) !important;
+}
+
+.hidden { opacity: 0; }
+.show { opacity: 1; animation: pulse 1.5s infinite alternate; }
+
+@keyframes pulse {
+    from { transform: translate(-50%, -50%) scale(1); }
+    to { transform: translate(-50%, -50%) scale(1.1); }
+}
