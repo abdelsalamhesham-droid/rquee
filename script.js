@@ -6,35 +6,38 @@ const cowAlert = document.getElementById('cowAlert');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// السكور العادي (مستوى واحد ثابت)
 let score = 0;
 const targetScore = 3; 
 let isGameOver = false;
-let cowTimeout; // للتحكم في وقت اختفاء الكلمة
+let cowTimeout;
 
-// القوس
+// متغير لمعرفة هل الشاشة بالطول (موبايل) ولا بالعرض (لاب توب)
+let isMobile = canvas.height > canvas.width;
+
+// إعداد القوس بناءً على نوع الشاشة
 const bow = {
-    x: 80,
-    y: canvas.height / 2,
+    x: isMobile ? canvas.width / 2 : 80,
+    y: isMobile ? canvas.height - 100 : canvas.height / 2,
     radius: 45,
     isPulling: false,
-    pullX: 80,
-    pullY: canvas.height / 2
+    pullX: 0,
+    pullY: 0
 };
+bow.pullX = bow.x;
+bow.pullY = bow.y;
 
-// الهدف (على مسافة بعيدة ومناسبة ومستقرة)
+// إعداد الهدف بناءً على نوع الشاشة (أبعد بكتير وتحدي)
 const target = {
-    x: canvas.width * 0.75, 
-    y: canvas.height / 2,
-    radius: 38,
-    speed: 3,
+    x: isMobile ? canvas.width / 2 : canvas.width * 0.82, 
+    y: isMobile ? 120 : canvas.height / 2,
+    radius: isMobile ? 30 : 35, // أصغر على الموبايل عشان الصعوبة والتحدي
+    speed: isMobile ? 4 : 3.5,   // أسرع شوية على الموبايل
     direction: 1
 };
 
 let arrows = [];
 let particles = []; 
 
-// جزيئات ذيل النيون للسهم
 class TrailParticle {
     constructor(x, y) {
         this.x = x;
@@ -50,14 +53,11 @@ class TrailParticle {
         ctx.shadowBlur = 8;
         ctx.shadowColor = '#00ffff';
         ctx.fillStyle = '#00ffff';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
     }
 }
 
-// كلاس السهم النيون
 class Arrow {
     constructor(x, y, angle, speed) {
         this.x = x;
@@ -78,7 +78,6 @@ class Arrow {
             particles.push(new TrailParticle(tailX, tailY));
         }
 
-        // حساب الإصابة
         let dist = Math.hypot(this.x - target.x, this.y - target.y);
         if (dist < target.radius && this.isActive) {
             this.isActive = false;
@@ -87,13 +86,13 @@ class Arrow {
                 isGameOver = true;
                 winMessage.classList.remove('hidden');
                 winMessage.classList.add('show');
-                cowAlert.classList.remove('cow-show'); // إخفاء كلمة بقرة لو فاز
+                cowAlert.classList.remove('cow-show');
             }
             return { hit: true, out: false };
         }
 
-        // السهم ضاع وخرج برة الشاشة
-        if (this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+        // حدود الضياع متوافقة مع الاتجاهين
+        if (this.x > canvas.width || this.x < 0 || this.y < 0 || this.y > canvas.height) {
             return { hit: false, out: true };
         }
 
@@ -104,10 +103,8 @@ class Arrow {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = '#00ffff';
-        ctx.strokeStyle = '#00ffff';
-        ctx.lineWidth = 3.5;
+        ctx.shadowBlur = 12; ctx.shadowColor = '#00ffff';
+        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 3.5;
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-this.length, 0); ctx.stroke();
         ctx.fillStyle = '#ffffff';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-8, -4); ctx.lineTo(-8, 4); ctx.fill();
@@ -115,24 +112,17 @@ class Arrow {
     }
 }
 
-// دالة إظهار كلمة "بقرة 🐮" الكبيرة فوق في منتصف الشاشة
 function triggerCowAlert() {
     if (isGameOver) return;
-    
-    // مسح أي تيمر قديم عشان الكلام ميتداخلش لو ضيعت سهمين ورا بعض بسرعة
     clearTimeout(cowTimeout);
-    
     cowAlert.classList.remove('cow-hidden');
     cowAlert.classList.add('cow-show');
-    
-    // تختفي تلقائياً بعد ثانية ونصف
     cowTimeout = setTimeout(() => {
         cowAlert.classList.remove('cow-show');
         cowAlert.classList.add('cow-hidden');
     }, 1500);
 }
 
-// التحكم بالسحب (ماوس + لمس للموبايل)
 function startPull(clientX, clientY) {
     if (isGameOver) return;
     let dist = Math.hypot(clientX - bow.x, clientY - bow.y);
@@ -172,19 +162,21 @@ window.addEventListener('touchstart', (e) => startPull(e.touches[0].clientX, e.t
 window.addEventListener('touchmove', (e) => movePull(e.touches[0].clientX, e.touches[0].clientY));
 window.addEventListener('touchend', endPull);
 
-
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // حركة الهدف
+    // حركة الهدف (يمين وشمال للموبايل، وفوق وتحت للاب توب)
     if (!isGameOver) {
-        target.y += target.speed * target.direction;
-        if (target.y > canvas.height - 80 || target.y < 80) {
-            target.direction *= -1;
+        if (isMobile) {
+            target.x += target.speed * target.direction;
+            if (target.x > canvas.width - 50 || target.x < 50) target.direction *= -1;
+        } else {
+            target.y += target.speed * target.direction;
+            if (target.y > canvas.height - 80 || target.y < 80) target.direction *= -1;
         }
     }
 
-    // رسم لوحة الهدف النيون
+    // رسم الهدف
     ctx.save();
     ctx.shadowBlur = 15; ctx.shadowColor = '#ff3344';
     ctx.beginPath(); ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
@@ -195,21 +187,20 @@ function gameLoop() {
     ctx.fillStyle = '#ff3344'; ctx.fill();
     ctx.restore();
 
-    // رسم خط التوقع النيون ليمتد لمسافة أبعد جداً (600 بكسل)
+    // رسم خط التوقع المنقط الطويل
     if (bow.isPulling) {
         let launchAngle = Math.atan2(bow.y - bow.pullY, bow.x - bow.pullX);
         ctx.save();
-        ctx.strokeStyle = 'rgba(0, 255, 255, 0.45)'; 
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([6, 8]); 
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.45)'; ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 8]);
         ctx.beginPath();
         ctx.moveTo(bow.x, bow.y);
-        ctx.lineTo(bow.x + Math.cos(launchAngle) * 600, bow.y + Math.sin(launchAngle) * 600); 
+        ctx.lineTo(bow.x + Math.cos(launchAngle) * 800, bow.y + Math.sin(launchAngle) * 800); 
         ctx.stroke();
         ctx.restore();
     }
 
-    // رسم القوس الأخضر النيون
+    // رسم القوس والوتر
     let bowAngle = Math.atan2(bow.pullY - bow.y, bow.pullX - bow.x) + Math.PI;
     ctx.save();
     ctx.shadowBlur = 15; ctx.shadowColor = '#44ff44';
@@ -219,7 +210,6 @@ function gameLoop() {
     ctx.stroke();
     ctx.restore();
 
-    // وتر القوس
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(bow.x + Math.sin(bowAngle)*bow.radius, bow.y - Math.cos(bowAngle)*bow.radius);
@@ -227,26 +217,19 @@ function gameLoop() {
     ctx.lineTo(bow.x - Math.sin(bowAngle)*bow.radius, bow.y + Math.cos(bowAngle)*bow.radius);
     ctx.stroke();
 
-    // رسم جزيئات ذيل السهم
+    // رسم الجزيئات والأسهم
     particles.forEach(p => p.update());
     particles = particles.filter(p => { p.draw(); return p.opacity > 0; });
 
-    // تحديث ورسم الأسهم (تم تصليح الـ Return هنا لمنع وقوف اللعبة)
     arrows = arrows.filter(arrow => {
         let status = arrow.update();
-        if (status.out) {
-            triggerCowAlert(); // تشغيل كلمة بقرة فوق لما يضيع
-            return false; // احذف السهم من الذاكرة بأمان واقفل العملية للسهم ده بس
-        }
-        if (status.hit) {
-            return false; // احذف السهم لو أصاب الهدف
-        }
-        
+        if (status.out) { triggerCowAlert(); return false; }
+        if (status.hit) return false;
         arrow.draw();
-        return true; // طول ما السهم لسه طاير جوه الشاشة سيبه شغال
+        return true;
     });
 
-    // سكور اللعبة
+    // النتيجة
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 20px Arial';
     ctx.fillText(`Score: ${score} / ${targetScore}`, 25, 45);
@@ -254,11 +237,23 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-gameLoop();
+// دالة إعادة ضبط المقاسات الذكية
+function resizeGame() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    isMobile = canvas.height > canvas.width;
 
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    bow.y = canvas.height / 2;
-    target.x = canvas.width * 0.75;
-    target.y = canvas.height / 2;
-});
+    bow.x = isMobile ? canvas.width / 2 : 80;
+    bow.y = isMobile ? canvas.height - 120 : canvas.height / 2;
+    bow.pullX = bow.x;
+    bow.pullY = bow.y;
+
+    target.x = isMobile ? canvas.width / 2 : canvas.width * 0.82;
+    target.y = isMobile ? 120 : canvas.height / 2;
+    target.radius = isMobile ? 28 : 35;
+    target.speed = isMobile ? 4.5 : 3.5;
+}
+
+window.addEventListener('resize', resizeGame);
+resizeGame();
+gameLoop();
