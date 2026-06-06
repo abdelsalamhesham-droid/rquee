@@ -11,10 +11,10 @@ const targetScore = 3;
 let isGameOver = false;
 let cowTimeout;
 
-// متغير لمعرفة هل الشاشة بالطول (موبايل) ولا بالعرض (لاب توب)
+// تتبع هل الشاشة بالطول (موبايل) ولا بالعرض (لاب توب)
 let isMobile = canvas.height > canvas.width;
 
-// إعداد القوس بناءً على نوع الشاشة
+// إعداد القوس
 const bow = {
     x: isMobile ? canvas.width / 2 : 80,
     y: isMobile ? canvas.height - 100 : canvas.height / 2,
@@ -26,12 +26,12 @@ const bow = {
 bow.pullX = bow.x;
 bow.pullY = bow.y;
 
-// إعداد الهدف بناءً على نوع الشاشة (أبعد بكتير وتحدي)
+// إعداد الهدف
 const target = {
     x: isMobile ? canvas.width / 2 : canvas.width * 0.82, 
     y: isMobile ? 120 : canvas.height / 2,
-    radius: isMobile ? 30 : 35, // أصغر على الموبايل عشان الصعوبة والتحدي
-    speed: isMobile ? 4 : 3.5,   // أسرع شوية على الموبايل
+    radius: isMobile ? 28 : 35, 
+    speed: isMobile ? 4.5 : 3.5,   
     direction: 1
 };
 
@@ -50,8 +50,7 @@ class TrailParticle {
     draw() {
         ctx.save();
         ctx.globalAlpha = this.opacity;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 8; ctx.shadowColor = '#00ffff';
         ctx.fillStyle = '#00ffff';
         ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
@@ -82,16 +81,24 @@ class Arrow {
         if (dist < target.radius && this.isActive) {
             this.isActive = false;
             score++;
+            
+            // تحقق من الفوز
             if (score >= targetScore) {
                 isGameOver = true;
+                
+                // إظهار كلمة Love You
                 winMessage.classList.remove('hidden');
                 winMessage.classList.add('show');
-                cowAlert.classList.remove('cow-show');
+                cowAlert.classList.remove('cow-show'); // إخفاء كلمة بقرة منعاً للتداخل
+                
+                // التوجيه التلقائي إلى لينَك أنغامي بعد 10 ثوانٍ بالظبط (10000 مللي ثانية)
+                setTimeout(() => {
+                    window.location.href = "https://open.anghami.com/HV624rZ7K3b";
+                }, 10000);
             }
             return { hit: true, out: false };
         }
 
-        // حدود الضياع متوافقة مع الاتجاهين
         if (this.x > canvas.width || this.x < 0 || this.y < 0 || this.y > canvas.height) {
             return { hit: false, out: true };
         }
@@ -165,7 +172,7 @@ window.addEventListener('touchend', endPull);
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // حركة الهدف (يمين وشمال للموبايل، وفوق وتحت للاب توب)
+    // حركة الهدف تتوقف لو اللعبة انتهت عشان نثبت المشهد
     if (!isGameOver) {
         if (isMobile) {
             target.x += target.speed * target.direction;
@@ -176,19 +183,21 @@ function gameLoop() {
         }
     }
 
-    // رسم الهدف
-    ctx.save();
-    ctx.shadowBlur = 15; ctx.shadowColor = '#ff3344';
-    ctx.beginPath(); ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff3344'; ctx.fill();
-    ctx.beginPath(); ctx.arc(target.x, target.y, target.radius * 0.6, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff'; ctx.fill();
-    ctx.beginPath(); ctx.arc(target.x, target.y, target.radius * 0.2, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff3344'; ctx.fill();
-    ctx.restore();
+    // رسم الهدف (بيختفي لو فاز عشان الكلمة تاخد راحتها)
+    if (!isGameOver) {
+        ctx.save();
+        ctx.shadowBlur = 15; ctx.shadowColor = '#ff3344';
+        ctx.beginPath(); ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff3344'; ctx.fill();
+        ctx.beginPath(); ctx.arc(target.x, target.y, target.radius * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.beginPath(); ctx.arc(target.x, target.y, target.radius * 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff3344'; ctx.fill();
+        ctx.restore();
+    }
 
-    // رسم خط التوقع المنقط الطويل
-    if (bow.isPulling) {
+    // رسم خط التوقع المنقط
+    if (bow.isPulling && !isGameOver) {
         let launchAngle = Math.atan2(bow.y - bow.pullY, bow.x - bow.pullX);
         ctx.save();
         ctx.strokeStyle = 'rgba(0, 255, 255, 0.45)'; ctx.lineWidth = 2.5;
@@ -200,22 +209,24 @@ function gameLoop() {
         ctx.restore();
     }
 
-    // رسم القوس والوتر
-    let bowAngle = Math.atan2(bow.pullY - bow.y, bow.pullX - bow.x) + Math.PI;
-    ctx.save();
-    ctx.shadowBlur = 15; ctx.shadowColor = '#44ff44';
-    ctx.strokeStyle = '#44ff44'; ctx.lineWidth = 4.5;
-    ctx.beginPath();
-    ctx.arc(bow.x, bow.y, bow.radius, bowAngle - Math.PI/2, bowAngle + Math.PI/2);
-    ctx.stroke();
-    ctx.restore();
+    // رسم القوس (بيختفي برضه بعد الفوز عشان يروق الشاشة للرسالة)
+    if (!isGameOver) {
+        let bowAngle = Math.atan2(bow.pullY - bow.y, bow.pullX - bow.x) + Math.PI;
+        ctx.save();
+        ctx.shadowBlur = 15; ctx.shadowColor = '#44ff44';
+        ctx.strokeStyle = '#44ff44'; ctx.lineWidth = 4.5;
+        ctx.beginPath();
+        ctx.arc(bow.x, bow.y, bow.radius, bowAngle - Math.PI/2, bowAngle + Math.PI/2);
+        ctx.stroke();
+        ctx.restore();
 
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(bow.x + Math.sin(bowAngle)*bow.radius, bow.y - Math.cos(bowAngle)*bow.radius);
-    ctx.lineTo(bow.pullX, bow.pullY);
-    ctx.lineTo(bow.x - Math.sin(bowAngle)*bow.radius, bow.y + Math.cos(bowAngle)*bow.radius);
-    ctx.stroke();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(bow.x + Math.sin(bowAngle)*bow.radius, bow.y - Math.cos(bowAngle)*bow.radius);
+        ctx.lineTo(bow.pullX, bow.pullY);
+        ctx.lineTo(bow.x - Math.sin(bowAngle)*bow.radius, bow.y + Math.cos(bowAngle)*bow.radius);
+        ctx.stroke();
+    }
 
     // رسم الجزيئات والأسهم
     particles.forEach(p => p.update());
@@ -229,15 +240,16 @@ function gameLoop() {
         return true;
     });
 
-    // النتيجة
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 20px Arial';
-    ctx.fillText(`Score: ${score} / ${targetScore}`, 25, 45);
+    // النتيجة (بتختفي برضه بعد الفوز عشان الروقان)
+    if (!isGameOver) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText(`Score: ${score} / ${targetScore}`, 25, 45);
+    }
 
     requestAnimationFrame(gameLoop);
 }
 
-// دالة إعادة ضبط المقاسات الذكية
 function resizeGame() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
