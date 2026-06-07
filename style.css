@@ -10,31 +10,14 @@
 body {
     background-color: #0b0b0f;
     overflow: hidden;
-    font-family: 'Arial Black', 'Cairo', sans-serif;
+    font-family: 'Cairo', sans-serif;
 }
 
 canvas {
     display: block;
 }
 
-/* تنسيق رسالة الفوز */
-#winMessage {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 4rem;
-    color: #ff3344;
-    text-shadow: 0 0 30px rgba(255, 51, 68, 0.9);
-    letter-spacing: 5px;
-    transition: opacity 0.5s ease-in-out;
-    z-index: 10;
-    pointer-events: none;
-    text-align: center;
-    width: 100%;
-}
-
-/* تنسيق تنبيه البقرة فوق في منتصف الشاشة */
+/* تنبيه البقرة فوق في منتصف الشاشة */
 #cowAlert {
     position: absolute;
     top: 10%;
@@ -49,20 +32,142 @@ canvas {
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.cow-hidden {
-    opacity: 0;
-    top: 5%; /* تأثير حركة خفيفة لبرة الشاشة */
+.cow-hidden { opacity: 0; top: 5%; }
+.cow-show { opacity: 1; transform: translateX(-50%) scale(1.1) !important; }
+
+/* حاوية الجواب بالكامل */
+#envelopeContainer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: rgba(11, 11, 15, 0.85); /* تغطية خلفية اللعبة بروقان */
+    transition: opacity 0.5s ease;
 }
 
-.cow-show {
-    opacity: 1;
-    transform: translateX(-50%) scale(1.1) !important;
+/* تصميم الجواب (Envelope) */
+.envelope {
+    position: relative;
+    width: 280px;
+    height: 180px;
+    background: #d4a373; /* لون المغلف البيج الداكن الحقيقي */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+.envelope:hover { transform: scale(1.03); }
+
+/* غطاء الجواب المثلث العلوي */
+.flap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-left: 140px solid transparent;
+    border-right: 140px solid transparent;
+    border-top: 100px solid #c69362;
+    transform-origin: top;
+    transition: transform 0.4s ease;
+    z-index: 3;
 }
 
-.hidden { opacity: 0; }
-.show { opacity: 1; animation: pulse 1.5s infinite alternate; }
-
-@keyframes pulse {
-    from { transform: translate(-50%, -50%) scale(1); }
-    to { transform: translate(-50%, -50%) scale(1.1); }
+/* جيب الجواب الأمامي */
+.pocket {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    border-left: 140px solid #e9c46a;
+    border-right: 140px solid #e9c46a;
+    border-bottom: 90px solid #e9c46a;
+    border-top: 90px solid transparent;
+    z-index: 2;
 }
+
+/* الورقة أو الرسالة بالداخل */
+.letter {
+    position: absolute;
+    bottom: 5px;
+    left: 15px;
+    width: 250px;
+    height: 150px;
+    background: #fff;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1;
+    transition: transform 0.5s ease, z-index 0s 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* خط اليد العربي والرسالة */
+.letter-text {
+    font-family: 'Reem Kufi', serif;
+    font-size: 1.25rem;
+    color: #2b2d42;
+    text-align: center;
+    line-height: 1.6;
+    direction: rtl;
+    font-weight: bold;
+}
+
+/* تأثيرات حركة الـ Animation للجواب عند الضغط والفتح */
+.envelope.open .flap {
+    transform: rotateX(180deg);
+    z-index: 0;
+}
+
+.envelope.pull-letter .letter {
+    transform: translateY(-130px);
+    z-index: 4; /* ترتفع لتصبح فوق الجواب بالكامل */
+}
+
+/* تنسيق شاشة الروابط والأغنية بعد اختفاء الرسالة */
+#musicContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    transition: all 0.5s ease;
+}
+
+.music-btn {
+    padding: 14px 28px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #fff;
+    background: #ff3344;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(255, 51, 68, 0.6);
+    text-decoration: none;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.music-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(255, 51, 68, 0.9);
+}
+
+.timestamp-hint {
+    margin-top: 10px;
+    font-size: 1.3rem;
+    color: #00ffff;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+    font-family: 'Arial Black', sans-serif;
+}
+
+.music-hidden { opacity: 0; pointer-events: none; transform: scale(0.8); position: absolute; }
+.music-show { opacity: 1; pointer-events: auto; transform: scale(1); position: relative; }
+
+.hidden { display: none !important; opacity: 0; }
