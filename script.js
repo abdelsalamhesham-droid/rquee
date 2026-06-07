@@ -1,6 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const winMessage = document.getElementById('winMessage');
+const envelopeContainer = document.getElementById('envelopeContainer');
+const envelope = document.getElementById('envelope');
+const musicContainer = document.getElementById('musicContainer');
 const cowAlert = document.getElementById('cowAlert');
 
 canvas.width = window.innerWidth;
@@ -11,10 +13,11 @@ const targetScore = 3;
 let isGameOver = false;
 let cowTimeout;
 
-// تتبع هل الشاشة بالطول (موبايل) ولا بالعرض (لاب توب)
+// إدارة ضغطات فتح وتفعيل الجواب والرسالة
+let envelopeClicks = 0;
+
 let isMobile = canvas.height > canvas.width;
 
-// إعداد القوس
 const bow = {
     x: isMobile ? canvas.width / 2 : 80,
     y: isMobile ? canvas.height - 100 : canvas.height / 2,
@@ -26,7 +29,6 @@ const bow = {
 bow.pullX = bow.x;
 bow.pullY = bow.y;
 
-// إعداد الهدف
 const target = {
     x: isMobile ? canvas.width / 2 : canvas.width * 0.82, 
     y: isMobile ? 120 : canvas.height / 2,
@@ -82,19 +84,12 @@ class Arrow {
             this.isActive = false;
             score++;
             
-            // تحقق من الفوز
             if (score >= targetScore) {
                 isGameOver = true;
                 
-                // إظهار كلمة Love You
-                winMessage.classList.remove('hidden');
-                winMessage.classList.add('show');
-                cowAlert.classList.remove('cow-show'); // إخفاء كلمة بقرة منعاً للتداخل
-                
-                // التوجيه التلقائي إلى لينَك أنغامي بعد 10 ثوانٍ بالظبط (10000 مللي ثانية)
-                setTimeout(() => {
-                    window.location.href = "https://open.anghami.com/HV624rZ7K3b";
-                }, 10000);
+                // إظهار حاوية المغلف الكبرى فور الفوز
+                envelopeContainer.classList.remove('hidden');
+                cowAlert.classList.remove('cow-show'); 
             }
             return { hit: true, out: false };
         }
@@ -129,6 +124,37 @@ function triggerCowAlert() {
         cowAlert.classList.add('cow-hidden');
     }, 1500);
 }
+
+// دالة نقرات الجواب والتحكم بالرسالة والمفاجأة
+envelope.addEventListener('click', (e) => {
+    e.stopPropagation(); // منع اختلاط الضغطات مع القوس
+    
+    envelopeClicks++;
+    
+    if (envelopeClicks === 1) {
+        // الضغطة الأولى: فتح غطاء الجواب العلوي
+        envelope.classList.add('open');
+    } else if (envelopeClicks === 2) {
+        // الضغطة الثانية: سحب الورقة وطلوع الرسالة للأعلى
+        envelope.classList.add('pull-letter');
+        
+        // انتظر بقاء الرسالة واضحة لمدة 5 ثوانٍ كاملة (5000ms) ثم إخفائها وإبراز رابط يوتيوب
+        setTimeout(() => {
+            // إخفاء الجواب والرسالة بأنيميشن خفيف لأسفل
+            envelope.style.transition = "all 0.5s ease";
+            envelope.style.opacity = "0";
+            envelope.style.transform = "scale(0.8) translateY(100px)";
+            
+            setTimeout(() => {
+                envelope.style.display = "none";
+                // إظهار اللينك والـ Hint المكتوب تحته التوقيت المطلوبة
+                musicContainer.classList.remove('music-hidden');
+                musicContainer.classList.add('music-show');
+            }, 500);
+            
+        }, 5000);
+    }
+});
 
 function startPull(clientX, clientY) {
     if (isGameOver) return;
@@ -172,7 +198,6 @@ window.addEventListener('touchend', endPull);
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // حركة الهدف تتوقف لو اللعبة انتهت عشان نثبت المشهد
     if (!isGameOver) {
         if (isMobile) {
             target.x += target.speed * target.direction;
@@ -183,7 +208,6 @@ function gameLoop() {
         }
     }
 
-    // رسم الهدف (بيختفي لو فاز عشان الكلمة تاخد راحتها)
     if (!isGameOver) {
         ctx.save();
         ctx.shadowBlur = 15; ctx.shadowColor = '#ff3344';
@@ -196,7 +220,6 @@ function gameLoop() {
         ctx.restore();
     }
 
-    // رسم خط التوقع المنقط
     if (bow.isPulling && !isGameOver) {
         let launchAngle = Math.atan2(bow.y - bow.pullY, bow.x - bow.pullX);
         ctx.save();
@@ -209,7 +232,6 @@ function gameLoop() {
         ctx.restore();
     }
 
-    // رسم القوس (بيختفي برضه بعد الفوز عشان يروق الشاشة للرسالة)
     if (!isGameOver) {
         let bowAngle = Math.atan2(bow.pullY - bow.y, bow.pullX - bow.x) + Math.PI;
         ctx.save();
@@ -228,7 +250,6 @@ function gameLoop() {
         ctx.stroke();
     }
 
-    // رسم الجزيئات والأسهم
     particles.forEach(p => p.update());
     particles = particles.filter(p => { p.draw(); return p.opacity > 0; });
 
@@ -240,7 +261,6 @@ function gameLoop() {
         return true;
     });
 
-    // النتيجة (بتختفي برضه بعد الفوز عشان الروقان)
     if (!isGameOver) {
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 20px Arial';
